@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0a0f;
+  --surface: #111118;
+  --border:  #1e1e2e;
+  --muted:   #2a2a3e;
+  --text:    #e2e2f0;
+  --dim:     #6b6b8a;
+  --accent:  #7c6af7;
+  --accent2: #a78bfa;
+  --green:   #34d399;
+  --red:     #f87171;
+  --yellow:  #fbbf24;
+  --cyan:    #22d3ee;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(124,106,247,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,106,247,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ════════════════════════════
+   LOGIN SCREEN
+════════════════════════════ */
+#login-screen {
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center;
+  animation: fadeUp 0.5s ease both;
+}
+
+.login-glyph {
+  width: 72px; height: 72px;
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin-bottom: 24px;
+  box-shadow: 0 0 40px rgba(124,106,247,0.2);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(124,106,247,0.15); }
+  50%      { box-shadow: 0 0 50px rgba(124,106,247,0.35); }
+}
+
+.login-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 800;
+  color: var(--text); margin-bottom: 4px; text-align: center;
+}
+.login-sub {
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 32px; text-align: center;
+}
+
+.login-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+
+.login-label {
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 8px; display: block;
+}
+
+.login-input-wrap { position: relative; margin-bottom: 16px; }
+.login-input {
+  width: 100%; padding: 12px 14px 12px 40px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,106,247,0.15);
+}
+.login-icon {
+  position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%); font-size: 14px; opacity: 0.4;
+}
+
+.login-btn {
+  width: 100%; padding: 13px;
+  background: var(--accent); border: none; border-radius: 10px;
+  color: #fff; font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.04em;
+}
+.login-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+.login-error {
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 8px; font-size: 11px; color: var(--red);
+  display: none; text-align: center;
+}
+.login-error.show { display: block; }
+
+/* ════════════════════════════
+   ADMIN DASHBOARD
+════════════════════════════ */
+#admin-screen {
+  width: 100%; max-width: 560px;
+  display: none; flex-direction: column; gap: 16px;
+  animation: fadeUp 0.5s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.admin-brand {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 800; color: var(--text);
+}
+.admin-brand span { color: var(--accent); }
+.admin-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 12px;
+  font-size: 10px; color: var(--green); letter-spacing: 0.08em;
+}
+.badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+/* Stat cards row */
+.stats-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+}
+.stat-label {
+  font-size: 9px; color: var(--dim);
+  letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;
+}
+.stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 800; color: var(--text);
+}
+.stat-val.green { color: var(--green); }
+.stat-val.cyan  { color: var(--cyan); }
+
+/* Section card */
+.section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.section-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-head::before {
+  content: ''; width: 3px; height: 12px;
+  background: var(--accent); border-radius: 2px;
+}
+.section-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Action buttons */
+.action-row { display: flex; gap: 10px; }
+
+.btn {
+  flex: 1; padding: 12px 10px;
+  border-radius: 10px; border: 1px solid var(--border);
+  background: var(--muted); color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent2); transform: translateY(-1px); }
+
+.btn.danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
+.btn.danger:hover { background: rgba(248,113,113,0.1); border-color: var(--red); }
+
+.btn.warning { border-color: rgba(251,191,36,0.3); color: var(--yellow); }
+.btn.warning:hover { background: rgba(251,191,36,0.1); border-color: var(--yellow); }
+
+.btn.success { border-color: rgba(52,211,153,0.3); color: var(--green); }
+.btn.success:hover { background: rgba(52,211,153,0.1); border-color: var(--green); }
+
+.btn.active-btn { background: rgba(52,211,153,0.12); border-color: var(--green); color: var(--green); }
+
+/* Hotspot toggle */
+.hotspot-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+}
+.hotspot-label { font-size: 12px; color: var(--text); }
+.hotspot-sub   { font-size: 10px; color: var(--dim); margin-top: 2px; }
+
+.toggle {
+  position: relative; width: 44px; height: 24px;
+  background: var(--muted); border-radius: 100px;
+  cursor: pointer; transition: background 0.3s;
+  border: 1px solid var(--border); flex-shrink: 0;
+}
+.toggle.on { background: var(--green); border-color: var(--green); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; top: 2px; left: 2px;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 20px;
+  font-size: 12px; color: var(--text);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 9999; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok   { border-color: var(--green); color: var(--green); }
+.toast.err  { border-color: var(--red);   color: var(--red); }
+
+/* Log panel */
+.log-toggle-btn {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  cursor: pointer; text-align: left;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.2s, color 0.2s;
+}
+.log-toggle-btn:hover { border-color: var(--accent); color: var(--accent2); }
+.log-toggle-btn .arrow { transition: transform 0.3s; }
+.log-toggle-btn.open .arrow { transform: rotate(180deg); }
+
+.log-panel {
+  display: none; margin-top: 10px;
+  background: #06060b; border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.log-panel.open { display: block; animation: fadeUp 0.3s ease both; }
+.log-bar {
+  background: #0d0d15; padding: 8px 12px;
+  display: flex; align-items: center; gap: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.log-dot { width: 8px; height: 8px; border-radius: 50%; }
+.log-dot:nth-child(1){background:#ff5f57;}
+.log-dot:nth-child(2){background:#febc2e;}
+.log-dot:nth-child(3){background:#28c840;}
+.log-title { font-size: 10px; color: rgba(255,255,255,0.2); margin-left:4px; letter-spacing:0.05em; }
+.log-body {
+  padding: 12px; max-height: 220px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--muted) transparent;
+}
+.log-line {
+  font-size: 10px; line-height: 1.9; color: rgba(255,255,255,0.35);
+  animation: lineIn 0.2s ease both;
+}
+.log-line .t  { color: var(--dim); margin-right: 8px; }
+.log-line.INFO    { color: rgba(255,255,255,0.45); }
+.log-line.WARNING { color: var(--yellow); }
+.log-line.ERROR   { color: var(--red); }
+.log-empty { font-size: 10px; color: var(--dim); text-align: center; padding: 20px 0; }
+
+@keyframes lineIn { from{opacity:0;transform:translateX(-4px);} to{opacity:1;transform:none;} }
+
+/* Logout */
+.logout-row {
+  text-align: center; padding-top: 4px;
+}
+.logout-btn {
+  background: none; border: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--dim);
+  cursor: pointer; letter-spacing: 0.1em;
+  text-transform: uppercase; text-decoration: underline;
+  transition: color 0.2s;
+}
+.logout-btn:hover { color: var(--red); }
+
+/* Confirm overlay */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000; backdrop-filter: blur(4px);
+}
+.overlay.show { display: flex; }
+.confirm-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px 24px; max-width: 300px; width: 90%;
+  text-align: center; animation: fadeUp 0.3s ease both;
+}
+.confirm-icon { font-size: 36px; margin-bottom: 12px; }
+.confirm-title {
+  font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800;
+  margin-bottom: 6px;
+}
+.confirm-msg { font-size: 11px; color: var(--dim); margin-bottom: 20px; line-height: 1.6; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-yes {
+  flex: 1; padding: 11px; border-radius: 9px; border: none;
+  background: var(--red); color: #fff;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.confirm-yes:hover { opacity: 0.85; }
+.confirm-no {
+  flex: 1; padding: 11px; border-radius: 9px;
+  border: 1px solid var(--border); background: none; color: var(--dim);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+}
+.confirm-no:hover { border-color: var(--text); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ── CONFIRM OVERLAY ── -->
+<div class="overlay" id="overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">Are you sure?</div>
+    <div class="confirm-msg"   id="confirm-msg">This action cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="confirm-yes">Confirm</button>
+      <button class="confirm-no"  onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════
+     LOGIN SCREEN
+════════════════════════ -->
+<div id="login-screen">
+  <div class="login-glyph">🛡️</div>
+  <div class="login-title">SecureVault Admin</div>
+  <div class="login-sub">Restricted Access · Pi Zero 2W</div>
+  <div class="login-card">
+    <label class="login-label">Admin Password</label>
+    <div class="login-input-wrap">
+      <span class="login-icon">🔑</span>
+      <input class="login-input" type="password" id="pwd-input"
+             placeholder="Enter password…" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Authenticate →</button>
+    <div class="login-error" id="login-error">❌ Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     ADMIN DASHBOARD
+════════════════════════ -->
+<div id="admin-screen">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <div class="admin-brand">Secure<span>Vault</span> <span style="font-size:12px;color:var(--dim);font-family:'JetBrains Mono'">/ admin</span></div>
+    <div class="admin-badge">
+      <div class="badge-dot"></div>
+      <span id="server-time">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Connected</div>
+      <div class="stat-val cyan" id="stat-clients">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Scans Done</div>
+      <div class="stat-val" id="stat-scans">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Uptime</div>
+      <div class="stat-val green" id="stat-uptime">—</div>
+    </div>
+  </div>
+
+  <!-- WiFi Hotspot -->
+  <div class="section">
+    <div class="section-head">WiFi Hotspot</div>
+    <div class="section-body">
+      <div class="hotspot-row">
+        <div>
+          <div class="hotspot-label">pi-hotspot</div>
+          <div class="hotspot-sub" id="hotspot-status-text">Checking…</div>
+        </div>
+        <div class="toggle" id="hotspot-toggle" onclick="toggleHotspot()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power controls -->
+  <div class="section">
+    <div class="section-head">Power Controls</div>
+    <div class="section-body">
+      <div class="action-row">
+        <button class="btn warning" onclick="askConfirm('reboot')">
+          🔄 Reboot Pi
+        </button>
+        <button class="btn danger" onclick="askConfirm('shutdown')">
+          ⏻ Shutdown Pi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="section">
+    <div class="section-head">Scan Logs</div>
+    <div class="section-body">
+      <button class="log-toggle-btn" id="log-toggle-btn" onclick="toggleLog()">
+        <span>▶ Show live logs</span>
+        <span class="arrow">▾</span>
+      </button>
+      <div class="log-panel" id="log-panel">
+        <div class="log-bar">
+          <div class="log-dot"></div>
+          <div class="log-dot"></div>
+          <div class="log-dot"></div>
+          <span class="log-title">antivirus.log</span>
+        </div>
+        <div class="log-body" id="log-body">
+          <div class="log-empty">Loading logs…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout -->
+  <div class="logout-row">
+    <button class="logout-btn" onclick="doLogout()">sign out</button>
+  </div>
+
+</div><!-- end admin-screen -->
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+const ADMIN_BASE = '/sv-admin';
+let hotspotOn    = false;
+let logOpen      = false;
+let logInterval  = null;
+let confirmAction = null;
+
+// ══════════════════════════════════════
+// BOOT — check if already logged in
+// ══════════════════════════════════════
+window.onload = async function() {
+  // Try fetching status — if server returns 200 we are logged in
+  // If it returns 302 redirect to login, fetch will follow and return login page
+  // We detect login state by checking if /sv-admin/status responds with JSON
+  try {
+    const r = await fetch(ADMIN_BASE + '/status');
+    if (r.ok) {
+      const data = await r.json();
+      if (data.server_time) {
+        showDashboard(data);
+        return;
+      }
+    }
+  } catch(e) {}
+  showLogin();
+};
+
+// ══════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+}
+
+function showDashboard(statusData) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'flex';
+  updateStats(statusData);
+  startStatsPoll();
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('pwd-input').value;
+  const fd  = new FormData();
+  fd.append('password', pwd);
+
+  try {
+    const r = await fetch(ADMIN_BASE + '/login', { method: 'POST', body: fd });
+    if (r.ok) {
+      const status = await fetch(ADMIN_BASE + '/status');
+      const data   = await status.json();
+      showDashboard(data);
+    } else {
+      document.getElementById('login-error').classList.add('show');
+      document.getElementById('pwd-input').value = '';
+      document.getElementById('pwd-input').focus();
+    }
+  } catch(e) {
+    showToast('Server error', 'err');
+  }
+}
+
+// Allow pressing Enter on password field
+document.getElementById('pwd-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  window.location.href = ADMIN_BASE + '/logout';
+}
+
+// ══════════════════════════════════════
+// STATS POLLING (every 5 seconds)
+// ══════════════════════════════════════
+function startStatsPoll() {
+  updateStats(); // immediate
+  setInterval(updateStats, 5000);
+}
+
+async function updateStats(data) {
+  try {
+    if (!data) {
+      const r = await fetch(ADMIN_BASE + '/status');
+      data = await r.json();
+    }
+    document.getElementById('stat-clients').textContent = data.ws_clients;
+    document.getElementById('stat-scans').textContent   = data.scans_done;
+    document.getElementById('server-time').textContent  = data.server_time;
+
+    // Format uptime nicely
+    const secs = parseInt(data.uptime);
+    const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60);
+    document.getElementById('stat-uptime').textContent = h + 'h ' + m + 'm';
+
+    // Update hotspot toggle
+    hotspotOn = data.hotspot_on;
+    const tog = document.getElementById('hotspot-toggle');
+    const txt = document.getElementById('hotspot-status-text');
+    tog.classList.toggle('on', hotspotOn);
+    txt.textContent = hotspotOn ? 'Active — devices can connect' : 'Inactive';
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════
+// HOTSPOT TOGGLE
+// Explain: clicking the toggle calls the Pi's
+// /sv-admin/hotspot/on or /hotspot/off endpoint
+// which runs nmcli to turn WiFi hotspot on/off
+// ══════════════════════════════════════
+async function toggleHotspot() {
+  const action = hotspotOn ? 'off' : 'on';
+  try {
+    const r    = await fetch(`${ADMIN_BASE}/hotspot/${action}`, { method: 'POST' });
+    const data = await r.json();
+    showToast(data.message, 'ok');
+    setTimeout(updateStats, 2000); // re-check after 2s
+  } catch(e) {
+    showToast('Failed to toggle hotspot', 'err');
+  }
+}
+
+// ══════════════════════════════════════
+// CONFIRM DIALOG
+// Prevents accidental shutdown/reboot
+// ══════════════════════════════════════
+function askConfirm(action) {
+  confirmAction = action;
+  const cfg = {
+    shutdown: { icon:'⏻', title:'Shutdown Pi?',
+                msg:'The Pi will power off completely.\nYou will need physical access to turn it back on.' },
+    reboot:   { icon:'🔄', title:'Reboot Pi?',
+                msg:'The server will restart.\nIt will be back online in about 30 seconds.' },
+  };
+  const c = cfg[action];
+  document.getElementById('confirm-icon').textContent  = c.icon;
+  document.getElementById('confirm-title').textContent = c.title;
+  document.getElementById('confirm-msg').textContent   = c.msg;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('overlay').classList.remove('show');
+  confirmAction = null;
+}
+
+document.getElementById('confirm-yes').onclick = async function() {
+  closeConfirm();
+  if (!confirmAction) return;
+  try {
+    const r    = await fetch(`${ADMIN_BASE}/${confirmAction}`, { method: 'POST' });
+    const data = await r.json();
+    showToast(data.message, 'ok');
+  } catch(e) {
+    showToast('Command sent', 'ok');
+  }
+};
+
+// ══════════════════════════════════════
+// LOG PANEL TOGGLE
+// Clicking the button shows/hides logs
+// When open, polls /sv-admin/logs every 3s
+// ══════════════════════════════════════
+function toggleLog() {
+  logOpen = !logOpen;
+  const btn   = document.getElementById('log-toggle-btn');
+  const panel = document.getElementById('log-panel');
+  const label = btn.querySelector('span:first-child');
+
+  btn.classList.toggle('open', logOpen);
+  panel.classList.toggle('open', logOpen);
+  label.textContent = logOpen ? '▼ Hide logs' : '▶ Show live logs';
+
+  if (logOpen) {
+    fetchLogs();
+    logInterval = setInterval(fetchLogs, 3000);
+  } else {
+    clearInterval(logInterval);
+    logInterval = null;
+  }
+}
+
+async function fetchLogs() {
+  try {
+    const r    = await fetch(ADMIN_BASE + '/logs');
+    const logs = await r.json();
+    const body = document.getElementById('log-body');
+
+    if (!logs.length) {
+      body.innerHTML = '<div class="log-empty">No logs yet…</div>';
+      return;
+    }
+
+    // Rebuild log lines — newest at bottom
+    body.innerHTML = logs.map(l =>
+      `<div class="log-line ${l.level}"><span class="t">${l.time}</span>${l.msg}</div>`
+    ).join('');
+    body.scrollTop = body.scrollHeight; // auto-scroll to bottom
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════
+// TOAST NOTIFICATION
+// Small popup at bottom of screen
+// ══════════════════════════════════════
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

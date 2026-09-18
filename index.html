@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — Quantum Antivirus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0d0d14;
+  --paper: #f5f3ef;
+  --cream: #ede9e1;
+  --warm: #c8c2b4;
+  --accent: #c8502a;
+  --accent-pale: rgba(200,80,42,0.08);
+  --green: #1e6b4a;
+  --green-pale: rgba(30,107,74,0.08);
+  --red: #c8202a;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  transition: background 1s cubic-bezier(0.4,0,0.2,1);
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(200,80,42,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 80%, rgba(200,80,42,0.05) 0%, transparent 60%);
+  pointer-events: none; transition: background 1s;
+}
+
+body.state-virus { background: #f9ecec; animation: virusFlash 2s ease-in-out infinite; }
+body.state-virus::before { background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200,32,42,0.18) 0%, transparent 70%); }
+body.state-clean { background: #eef5f1; }
+body.state-clean::before { background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(30,107,74,0.12) 0%, transparent 70%); }
+
+@keyframes virusFlash { 0%,100%{background:#f9ecec;} 50%{background:#f5e0e0;} }
+
+.texture {
+  position: fixed; inset: 0; pointer-events: none; opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+.alert-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  padding: 11px 24px; text-align: center;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;
+  transform: translateY(-110%); transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.alert-banner.visible { transform: translateY(0); }
+.alert-banner.danger  { background: var(--red); color: #fff; }
+.alert-banner.success { background: var(--green); color: #fff; }
+
+.corner-mark {
+  position: fixed; font-family: 'DM Mono', monospace;
+  font-size: 9px; color: var(--warm); letter-spacing: 0.12em; opacity: 0.6;
+}
+.corner-mark.tl { top: 18px; left: 22px; }
+.corner-mark.tr { top: 18px; right: 22px; }
+.corner-mark.bl { bottom: 18px; left: 22px; }
+.corner-mark.br { bottom: 18px; right: 22px; }
+
+.wrap { width: 100%; max-width: 460px; position: relative; z-index: 10; }
+
+.brand {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 36px;
+  animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+.brand-name { font-family: 'DM Serif Display', serif; font-size: 21px; color: var(--ink); letter-spacing: -0.02em; }
+.brand-name em { font-style: italic; color: var(--accent); }
+
+.brand-badge {
+  display: flex; align-items: center; gap: 7px;
+  background: #fff; border: 1px solid var(--cream); border-radius: 100px;
+  padding: 5px 13px 5px 8px;
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--green);
+  letter-spacing: 0.04em; box-shadow: 0 1px 4px rgba(13,13,20,0.06);
+}
+.badge-dot { width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+.card {
+  background: #fff; border-radius: 22px; padding: 36px 38px;
+  box-shadow: 0 1px 2px rgba(13,13,20,0.06), 0 4px 16px rgba(13,13,20,0.08), 0 20px 60px rgba(13,13,20,0.07);
+  border: 1px solid rgba(220,216,208,0.6);
+  animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.6s, border-color 0.6s;
+}
+.card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), #e8795a, #f0a87a);
+  border-radius: 22px 22px 0 0; transition: background 0.6s;
+}
+body.state-virus .card::after { background: linear-gradient(90deg, var(--red), #e05060); }
+body.state-clean  .card::after { background: linear-gradient(90deg, var(--green), #3a9a6e); }
+body.state-virus .card { box-shadow: 0 1px 2px rgba(200,32,42,0.08), 0 4px 16px rgba(200,32,42,0.12), 0 20px 60px rgba(200,32,42,0.1); border-color: rgba(200,32,42,0.15); }
+body.state-clean .card { box-shadow: 0 1px 2px rgba(30,107,74,0.08), 0 4px 16px rgba(30,107,74,0.12), 0 20px 60px rgba(30,107,74,0.08); border-color: rgba(30,107,74,0.15); }
+
+@keyframes slideUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+
+.steps { display:flex;align-items:center;margin-bottom:30px; }
+.step  { display:flex;align-items:center;gap:8px; }
+.step-num {
+  width:26px;height:26px;border-radius:50%;border:1.5px solid var(--cream);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--warm);
+  flex-shrink:0;transition:all 0.4s ease;
+}
+.step-num.active { border-color:var(--accent);color:var(--accent);background:var(--accent-pale); }
+.step-num.done   { border-color:var(--green);color:#fff;background:var(--green); }
+.step-label { font-size:11px;color:var(--warm);font-weight:600;letter-spacing:0.02em;transition:color 0.4s;white-space:nowrap; }
+.step-label.active { color:var(--accent); }
+.step-label.done   { color:var(--green); }
+.step-line { flex:1;height:1px;background:var(--cream);margin:0 10px;transition:background 0.4s; }
+.step-line.done { background:var(--green); }
+
+.s-title { font-family:'DM Serif Display',serif;font-size:24px;letter-spacing:-0.03em;color:var(--ink);margin-bottom:4px;line-height:1.2; }
+.s-sub   { font-size:13px;color:#999;margin-bottom:26px;line-height:1.55; }
+
+.field { margin-bottom:18px; }
+.field-label { display:flex;align-items:center;justify-content:space-between;margin-bottom:7px; }
+.field-label span { font-size:11px;font-weight:700;color:var(--ink);letter-spacing:0.07em;text-transform:uppercase; }
+.field-label small { font-family:'DM Mono',monospace;font-size:10px;color:#bbb; }
+.input-wrap { position:relative; }
+.input-icon { position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;opacity:0.45; }
+input[type="text"] {
+  width:100%;padding:13px 14px 13px 40px;background:var(--paper);
+  border:1.5px solid var(--cream);border-radius:11px;
+  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;color:var(--ink);
+  outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s;
+}
+input[type="text"]:focus { border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px rgba(200,80,42,0.09); }
+input[type="text"]::placeholder { color:#c0bab0; }
+
+.dropzone {
+  position:relative;border:2px dashed var(--cream);border-radius:14px;
+  padding:28px 18px;text-align:center;cursor:pointer;background:var(--paper);
+  transition:all 0.3s ease;overflow:hidden;
+}
+.dropzone input[type="file"] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2; }
+@media (pointer: coarse) {
+  /* On mobile — make entire dropzone box tappable */
+  .dropzone { cursor: pointer; }
+  .dropzone input[type="file"] { z-index: 10; }
+}
+
+.dropzone:hover,.dropzone.over { border-color:var(--accent);background:var(--accent-pale); }
+.dropzone.filled { border-style:solid;border-color:var(--green);background:var(--green-pale); }
+.dz-icon-ring {
+  width:52px;height:52px;border-radius:50%;background:var(--cream);
+  border:1.5px solid rgba(200,80,42,0.15);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  margin:0 auto 12px;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),background 0.3s,box-shadow 0.3s;
+}
+.dz-mobile-btn {
+  display: none;
+  margin-top: 10px;
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 3;
+  position: relative;
+}
+@media (pointer: coarse) {
+  .dz-mobile-btn { display: inline-block; }
+}
+.dropzone:hover .dz-icon-ring { transform:translateY(-5px) rotate(-5deg);background:rgba(200,80,42,0.1);box-shadow:0 8px 20px rgba(200,80,42,0.18); }
+.dropzone.filled .dz-icon-ring { background:rgba(30,107,74,0.12); }
+.dz-title { font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px; }
+.dz-hint  { font-family:'DM Mono',monospace;font-size:10px;color:#b0a898;letter-spacing:0.05em; }
+
+.file-pill {
+  display:none;align-items:center;gap:10px;margin-top:12px;background:#fff;
+  border:1px solid rgba(30,107,74,0.18);border-radius:10px;padding:10px 13px;
+}
+.file-pill.show { display:flex; }
+.pill-icon { font-size:18px;flex-shrink:0; }
+.pill-info { flex:1;min-width:0; }
+.pill-name { font-family:'DM Mono',monospace;font-size:11px;color:var(--green);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.pill-size { font-family:'DM Mono',monospace;font-size:10px;color:#bbb;margin-top:2px; }
+.pill-remove { width:20px;height:20px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;flex-shrink:0;transition:background 0.2s,color 0.2s;z-index:3;position:relative; }
+.pill-remove:hover { background:var(--red);color:#fff; }
+
+.btn-primary {
+  width:100%;padding:15px;border:none;border-radius:13px;background:var(--ink);color:#fff;
+  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.02em;
+  cursor:pointer;transition:all 0.25s ease;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-top:4px;position:relative;overflow:hidden;
+}
+.btn-primary::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,0.06)); }
+.btn-primary:hover:not(:disabled) { background:#1a1a26;transform:translateY(-2px);box-shadow:0 8px 24px rgba(13,13,20,0.22); }
+.btn-primary:disabled { background:var(--cream);color:#c0b8ae;cursor:not-allowed;box-shadow:none;transform:none; }
+.btn-arrow { font-size:17px;transition:transform 0.25s; }
+.btn-primary:hover:not(:disabled) .btn-arrow { transform:translateX(4px); }
+
+.btn-ghost {
+  width:100%;padding:12px;border:1.5px solid var(--cream);border-radius:11px;
+  background:transparent;color:#999;font-family:'Cabinet Grotesk',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all 0.25s;margin-top:9px;
+}
+.btn-ghost:hover { border-color:var(--ink);color:var(--ink); }
+
+/* Scan screen */
+#screen-scan { text-align:center; }
+.scan-visual { position:relative;width:100px;height:100px;margin:0 auto 24px; }
+.ring { position:absolute;border-radius:50%;border:2px solid transparent; }
+.ring-1 { inset:0;border-top-color:var(--accent);border-right-color:rgba(200,80,42,0.25);animation:spin 1.1s linear infinite; }
+.ring-2 { inset:13px;border-top-color:rgba(200,80,42,0.45);border-left-color:var(--accent);animation:spin 1.7s linear infinite reverse; }
+.ring-3 { inset:26px;border-top-color:var(--accent);animation:spin 2.3s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg);} }
+.scan-center { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px; }
+.scan-heading { font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-bottom:5px; }
+.scan-sub { font-family:'DM Mono',monospace;font-size:10px;color:#b0a898;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:22px; }
+.prog-track { background:var(--cream);border-radius:100px;height:5px;overflow:hidden;margin-bottom:7px;position:relative; }
+.prog-fill {
+  height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#e8795a);
+  border-radius:100px;transition:width 0.14s ease;position:relative;
+}
+.prog-fill::after { content:'';position:absolute;right:-2px;top:50%;transform:translateY(-50%);width:9px;height:9px;background:#fff;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 6px rgba(200,80,42,0.4); }
+.prog-pct { font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);text-align:right;margin-bottom:18px; }
+
+.terminal { background:#0d0d14;border-radius:11px;overflow:hidden;text-align:left; }
+.t-bar { background:#181824;padding:9px 13px;display:flex;align-items:center;gap:5px; }
+.t-dot { width:9px;height:9px;border-radius:50%; }
+.t-dot:nth-child(1){background:#ff5f57;} .t-dot:nth-child(2){background:#febc2e;} .t-dot:nth-child(3){background:#28c840;}
+.t-title { font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);margin-left:5px;letter-spacing:0.05em; }
+.t-body { padding:14px;min-height:80px;max-height:110px;overflow-y:auto;scrollbar-width:none; }
+.t-line { font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);line-height:1.9;animation:lineIn 0.3s ease both; }
+.t-line.ok   { color:#4ade80; }
+.t-line.warn { color:#fbbf24; }
+@keyframes lineIn { from{opacity:0;transform:translateX(-5px);} to{opacity:1;transform:none;} }
+
+/* Virus screen */
+.virus-icon { width:92px;height:92px;border-radius:50%;background:rgba(200,32,42,0.07);border:2px solid rgba(200,32,42,0.22);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 22px;animation:threatPulse 1.8s ease-in-out infinite; }
+@keyframes threatPulse { 0%,100%{box-shadow:0 0 0 0 rgba(200,32,42,0.18);} 50%{box-shadow:0 0 0 14px rgba(200,32,42,0);} }
+.virus-title { font-family:'DM Serif Display',serif;font-size:27px;color:var(--red);letter-spacing:-0.03em;margin-bottom:5px; }
+.virus-desc  { font-size:13px;color:#999;margin-bottom:22px;line-height:1.6; }
+.threat-box  { background:rgba(200,32,42,0.05);border:1px solid rgba(200,32,42,0.14);border-radius:13px;padding:15px 17px;display:flex;align-items:center;gap:13px;margin-bottom:22px;text-align:left; }
+.threat-txt  { flex:1; }
+.threat-kv-label { font-family:'DM Mono',monospace;font-size:9px;color:rgba(200,32,42,0.55);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px; }
+.threat-kv-val   { font-family:'DM Mono',monospace;font-size:13px;color:var(--red);font-weight:500; }
+.threat-emoji { font-size:26px;flex-shrink:0; }
+
+/* Success screen */
+.success-icon { width:92px;height:92px;border-radius:50%;background:rgba(30,107,74,0.07);border:2px solid rgba(30,107,74,0.22);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 22px;animation:popIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes popIn { from{transform:scale(0.2);opacity:0;} to{transform:scale(1);opacity:1;} }
+.success-title { font-family:'DM Serif Display',serif;font-size:27px;color:var(--green);letter-spacing:-0.03em;margin-bottom:5px; }
+.success-desc  { font-size:13px;color:#999;margin-bottom:22px;line-height:1.6; }
+
+.result-table { background:var(--paper);border-radius:13px;border:1px solid var(--cream);overflow:hidden;margin-bottom:22px; }
+.result-row   { display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--cream);gap:12px; }
+.result-row:last-child { border-bottom:none; }
+.r-key { font-family:'DM Mono',monospace;font-size:9px;color:#bbb;letter-spacing:0.12em;text-transform:uppercase;flex-shrink:0; }
+.r-val { font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);font-weight:500;text-align:right;word-break:break-all; }
+.r-val.hi { color:var(--green);font-weight:700;font-size:13px; }
+
+.num-badge { display:inline-flex;align-items:center;gap:4px;background:rgba(30,107,74,0.1);border:1px solid rgba(30,107,74,0.18);border-radius:100px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:12px;color:var(--green);font-weight:500; }
+
+.screen { display:none; }
+.screen.active { display:block; }
+.screen-center { text-align:center; }
+
+.footer { margin-top:20px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--warm);letter-spacing:0.07em;animation:slideUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+
+/* ══════════════════════════════════════════
+   POPUP NOTIFICATION SYSTEM
+   Shows on ALL connected devices via WebSocket
+   Also shows welcome popup when device first connects
+   ══════════════════════════════════════════ */
+.popup-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 320px;
+  width: calc(100vw - 40px);
+}
+
+.popup {
+  background: #fff;
+  border-radius: 16px;
+  padding: 0;
+  pointer-events: all;
+  box-shadow: 0 4px 6px rgba(13,13,20,0.06), 0 12px 40px rgba(13,13,20,0.14);
+  border: 1px solid var(--cream);
+  animation: popSlide 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  overflow: hidden;
+  position: relative;
+}
+.popup.removing { animation: popOut 0.3s ease forwards; }
+
+@keyframes popSlide {
+  from { opacity:0; transform:translateX(60px) scale(0.9); }
+  to   { opacity:1; transform:translateX(0) scale(1); }
+}
+@keyframes popOut {
+  to { opacity:0; transform:translateX(60px) scale(0.88); max-height:0; padding:0; margin:0; }
+}
+
+/* coloured left strip */
+.popup-strip {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  border-radius: 16px 0 0 16px;
+}
+.popup.welcome  .popup-strip { background: var(--accent); }
+.popup.threat   .popup-strip { background: var(--red); }
+.popup.clean    .popup-strip { background: var(--green); }
+
+.popup-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 14px 20px;
+}
+
+.popup-icon { font-size: 26px; flex-shrink: 0; margin-top: 1px; }
+
+.popup-body { flex: 1; min-width: 0; }
+.popup-title {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 13px; font-weight: 800;
+  margin-bottom: 3px; line-height: 1.3;
+}
+.popup.welcome  .popup-title { color: var(--accent); }
+.popup.threat   .popup-title { color: var(--red); }
+.popup.clean    .popup-title { color: var(--green); }
+
+.popup-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: #888;
+  line-height: 1.65; word-break: break-word;
+}
+
+.popup-close {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: 16px; line-height: 1;
+  flex-shrink: 0; padding: 0; margin-top: 1px;
+  transition: color 0.2s;
+}
+.popup-close:hover { color: var(--ink); }
+
+/* progress bar at bottom */
+.popup-prog {
+  height: 3px;
+  width: 100%;
+  border-radius: 0 0 16px 16px;
+  animation: drain 5s linear forwards;
+}
+.popup.welcome .popup-prog { background: var(--accent); }
+.popup.threat  .popup-prog { background: var(--red); }
+.popup.clean   .popup-prog { background: var(--green); }
+@keyframes drain { from{width:100%;} to{width:0%;} }
+
+@media (max-width: 520px) {
+  .card { padding:26px 20px; }
+  .corner-mark { display:none; }
+  .popup-stack { bottom:16px; right:12px; left:12px; width:auto; max-width:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="texture"></div>
+<div class="corner-mark tl">SECUREVAULT</div>
+<div class="corner-mark tr">v3.0.0</div>
+<div class="corner-mark bl">QUANTUM · ML</div>
+<div class="corner-mark br">PI ZERO 2W</div>
+
+<div class="alert-banner danger"  id="banner-danger">⚠ &nbsp; THREAT DETECTED — FILE QUARANTINED — DO NOT PROCEED</div>
+<div class="alert-banner success" id="banner-success">✓ &nbsp; SCAN COMPLETE — FILE VERIFIED CLEAN — STORED SECURELY</div>
+
+<!-- Popup stack — bottom right -->
+<div class="popup-stack" id="popup-stack"></div>
+
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-name">Secure<em>Vault</em></div>
+    <div class="brand-badge">
+      <div class="badge-dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num active" id="s1">1</div>
+        <div class="step-label active" id="sl1">Upload</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step">
+        <div class="step-num" id="s2">2</div>
+        <div class="step-label" id="sl2">Scanning</div>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step">
+        <div class="step-num" id="s3">3</div>
+        <div class="step-label" id="sl3">Result</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 1: Upload -->
+    <div class="screen active" id="screen-upload">
+      <div class="s-title">Upload your document</div>
+      <div class="s-sub">Enter your name and attach a PDF. Our quantum model scans it before storing.</div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>Full Name</span><small>Required</small>
+        </div>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="name-input" placeholder="Enter your name" autocomplete="off"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>PDF Document</span><small>PDF only · Max 50 MB</small>
+        </div>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".pdf,application/pdf"/>
+          <div class="dz-icon-ring" id="dz-icon">📄</div>
+          <div class="dz-title">Drop your PDF here</div>
+          <div class="dz-hint">or click anywhere to browse</div>
+          <label for="file-input" class="dz-mobile-btn">📂 Tap to choose PDF</label>
+        </div>
+
+        <div class="file-pill" id="file-pill">
+          <span class="pill-icon">📑</span>
+          <div class="pill-info">
+            <div class="pill-name" id="pill-name">—</div>
+            <div class="pill-size" id="pill-size">—</div>
+          </div>
+          <button class="pill-remove" id="pill-remove" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-upload" disabled>
+        <span>Run Quantum Scan</span>
+        <span class="btn-arrow">→</span>
+      </button>
+    </div>
+
+    <!-- SCREEN 2: Scanning -->
+    <div class="screen screen-center" id="screen-scan">
+      <div class="scan-visual">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="scan-center">🔍</div>
+      </div>
+      <div class="scan-heading">Scanning file…</div>
+      <div class="scan-sub" id="scan-status">Initialising quantum sandbox</div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+      <div class="prog-pct" id="prog-pct">0%</div>
+      <div class="terminal">
+        <div class="t-bar">
+          <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+          <div class="t-title">securevault — quantum-threat-scanner</div>
+        </div>
+        <div class="t-body" id="t-body"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3a: Threat -->
+    <div class="screen screen-center" id="screen-virus">
+      <div class="virus-icon">☣️</div>
+      <div class="virus-title">Threat Detected</div>
+      <div class="virus-desc">A malicious signature was identified.<br>This file has been quarantined and destroyed.</div>
+      <div class="threat-box">
+        <div class="threat-txt">
+          <div class="threat-kv-label">Threat Signature</div>
+          <div class="threat-kv-val" id="threat-name">Malicious.PDF</div>
+        </div>
+        <div class="threat-emoji">🚨</div>
+      </div>
+      <button class="btn-primary" style="background:var(--red);" onclick="resetAll()">
+        <span>Try a Different File</span><span class="btn-arrow">↺</span>
+      </button>
+      <button class="btn-ghost" onclick="resetAll()">← Back to Start</button>
+    </div>
+
+    <!-- SCREEN 3b: Success -->
+    <div class="screen screen-center" id="screen-success">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Upload Complete</div>
+      <div class="success-desc">No threats found. Your file has been<br>renamed and stored securely on USB.</div>
+      <div class="result-table">
+        <div class="result-row">
+          <span class="r-key">Uploaded by</span>
+          <span class="r-val" id="r-name">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-key">New filename</span>
+          <span class="r-val hi" id="r-filename">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-key">File number</span>
+          <span class="r-val"><span class="num-badge" id="r-token">—</span></span>
+        </div>
+        <div class="result-row">
+          <span class="r-key">Scan time</span>
+          <span class="r-val" id="r-scantime">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-key">Scanned at</span>
+          <span class="r-val" id="r-time">—</span>
+        </div>
+      </div>
+<button class="btn-primary" onclick="resetAll()">
+        <span>Upload Another File</span><span class="btn-arrow">↑</span>
+      </button>
+    </div>
+
+  </div><!-- /card -->
+
+  <div class="footer">Quantum-distilled ML · Pi Zero 2W · AES-256 · Zero-log</div>
+</div>
+
+<script>
+// ── Helpers
+const el = id => document.getElementById(id);
+let selectedFile = null;
+
+// ── Form validation
+function validate() {
+  el('btn-upload').disabled = !(el('name-input').value.trim() && selectedFile);
+}
+el('name-input').addEventListener('input', validate);
+
+// ── File handling
+el('file-input').addEventListener('change', () => handleFile(el('file-input').files[0]));
+
+const dz = el('dropzone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  f && f.name.toLowerCase().endsWith('.pdf') ? handleFile(f) : alert('PDF files only.');
+});
+
+function handleFile(f) {
+  if (!f) return;
+  if (!f.name.toLowerCase().endsWith('.pdf')) { alert('Only PDF files are accepted.'); return; }
+  selectedFile = f;
+  dz.classList.add('filled');
+  el('dz-icon').textContent = '✅';
+  el('pill-name').textContent = f.name;
+  el('pill-size').textContent = fmtSize(f.size);
+  el('file-pill').classList.add('show');
+  validate();
+}
+
+el('pill-remove').addEventListener('click', e => {
+  e.stopPropagation();
+  selectedFile = null;
+  el('file-input').value = '';
+  dz.classList.remove('filled');
+  el('dz-icon').textContent = '📄';
+  el('file-pill').classList.remove('show');
+  validate();
+});
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+// ── Steps
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    el('s'+i).className  = 'step-num'   + (i<n?' done':i===n?' active':'');
+    el('sl'+i).className = 'step-label' + (i<n?' done':i===n?' active':'');
+    if (i<3) el('line'+i).className = 'step-line' + (i<n?' done':'');
+  });
+}
+
+function showScreen(id) {
+  ['screen-upload','screen-scan','screen-virus','screen-success']
+    .forEach(s => el(s).classList.remove('active'));
+  el(id).classList.add('active');
+}
+
+// ── Scan animation
+const LOGS = [
+  { p:6,  cls:'ok',   msg:'✓ Quantum sandbox initialised' },
+  { p:16, cls:'ok',   msg:'✓ PDF header parsed — version 1.7' },
+  { p:29, cls:'ok',   msg:'✓ Embedded objects extracted' },
+  { p:40, cls:'',     msg:'~ Checking for JavaScript payloads…' },
+  { p:52, cls:'',     msg:'~ Scanning OpenAction triggers…' },
+  { p:63, cls:'',     msg:'~ Computing byte-level entropy…' },
+  { p:75, cls:'',     msg:'~ Running QK-SVM feature analysis…' },
+  { p:86, cls:'warn', msg:'~ Quantum kernel inference…' },
+  { p:95, cls:'',     msg:'~ Finalising threat report…' },
+];
+const STATUS_MAP = [
+  [0,'Initialising quantum sandbox'],[20,'Parsing document structure'],
+  [45,'Scanning for threats'],[72,'QK-SVM inference'],[90,'Finalising report'],
+];
+
+// ── Upload to real Flask server
+el('btn-upload').addEventListener('click', startUpload);
+
+function startUpload() {
+  showScreen('screen-scan'); setStep(2);
+  el('t-body').innerHTML = '';
+  el('prog-fill').style.width = '0%';
+  el('prog-pct').textContent = '0%';
+
+  let pct = 0, li = 0;
+  // Animate to 90%, then wait for server
+  const tick = setInterval(() => {
+    if (pct < 90) {
+      pct++;
+      el('prog-fill').style.width = pct + '%';
+      el('prog-pct').textContent  = pct + '%';
+      for (let j=STATUS_MAP.length-1;j>=0;j--) {
+        if (pct>=STATUS_MAP[j][0]){el('scan-status').textContent=STATUS_MAP[j][1];break;}
+      }
+      while (li<LOGS.length && pct>=LOGS[li].p) {
+        const d=document.createElement('div');
+        d.className='t-line '+LOGS[li].cls;
+        d.textContent=LOGS[li].msg;
+        el('t-body').appendChild(d);
+        el('t-body').scrollTop=9999; li++;
+      }
+    }
+  }, 35);
+
+  const fd = new FormData();
+  fd.append('username', el('name-input').value.trim());
+  fd.append('file', selectedFile);
+
+  fetch('/upload', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(data => {
+      clearInterval(tick);
+      el('prog-fill').style.width = '100%';
+      el('prog-pct').textContent  = '100%';
+      setTimeout(() => showResult(data), 600);
+    })
+    .catch(err => {
+      clearInterval(tick);
+      alert('Server error: ' + err.message + '\nMake sure Pi server is running.');
+      resetAll();
+    });
+}
+
+function showResult(data) {
+  setStep(3);
+  if (data.verdict === 'MALWARE') {
+    document.body.classList.add('state-virus');
+    const risk  = data.risk  || 'HIGH';
+    const score = data.score || 0;
+    el('threat-name').textContent =
+      `Risk: ${risk}  ·  Score: ${(score*100).toFixed(1)}%  ·  File destroyed`;
+    showScreen('screen-virus');
+    showBanner('danger');
+  } else {
+    document.body.classList.add('state-clean');
+    el('r-name').textContent     = el('name-input').value.trim();
+    el('r-filename').textContent = data.new_filename || '—';
+
+    el('r-token').textContent    = data.token        || '—';
+    el('r-scantime').textContent = data.ms ? data.ms + ' ms' : '—';
+    el('r-time').textContent     = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+    showScreen('screen-success');
+    showBanner('success');
+  }
+}
+
+function showBanner(type) {
+  el('banner-danger').classList.remove('visible');
+  el('banner-success').classList.remove('visible');
+  el('banner-'+type).classList.add('visible');
+}
+
+function resetAll() {
+  document.body.classList.remove('state-virus','state-clean');
+  el('banner-danger').classList.remove('visible');
+  el('banner-success').classList.remove('visible');
+  el('name-input').value=''; el('file-input').value='';
+  selectedFile=null;
+  dz.classList.remove('filled','over');
+  el('dz-icon').textContent='📄';
+  el('file-pill').classList.remove('show');
+  el('btn-upload').disabled=true;
+  setStep(1); showScreen('screen-upload');
+}
+
+// ══════════════════════════════════════════
+// POPUP SYSTEM
+// ══════════════════════════════════════════
+function showPopup(type, title, lines) {
+  const icons = { welcome:'👋', threat:'🚨', clean:'✅' };
+  const p = document.createElement('div');
+  p.className = 'popup ' + type;
+  p.innerHTML = `
+    <div class="popup-strip"></div>
+    <div class="popup-inner">
+      <div class="popup-icon">${icons[type]||'ℹ️'}</div>
+      <div class="popup-body">
+        <div class="popup-title">${title}</div>
+        <div class="popup-msg">${lines.join('<br>')}</div>
+      </div>
+      <button class="popup-close" onclick="closePopup(this)">×</button>
+    </div>
+    <div class="popup-prog"></div>
+  `;
+  el('popup-stack').appendChild(p);
+  setTimeout(() => closePopup(p.querySelector('.popup-close')), 6000);
+}
+
+function closePopup(btn) {
+  const p = btn.closest ? btn.closest('.popup') : btn;
+  if (!p || p.classList.contains('removing')) return;
+  p.classList.add('removing');
+  setTimeout(() => p.remove(), 320);
+}
+
+// ══════════════════════════════════════════
+// WEBSOCKET — connects to Pi server
+// On connect  → welcome popup shown to this device only
+// On broadcast → scan result popups shown on ALL devices
+// ══════════════════════════════════════════
+function connectWS() {
+  const wsUrl = 'ws://' + location.host + '/ws';
+  let ws;
+  try { ws = new WebSocket(wsUrl); } catch(e) {
+    el('status-text').textContent = 'Offline';
+    return;
+  }
+
+  ws.onopen = function() {
+    el('status-text').textContent = 'System Online';
+    // Welcome popup — shown only on THIS device when it first connects
+    showPopup('welcome',
+      'Welcome to SecureVault',
+      [
+        'Connected to Pi Zero 2W scanner',
+        'Enter your <b>name</b> and select a <b>PDF file</b>',
+        'to scan and upload securely →'
+      ]
+    );
+  };
+
+  ws.onmessage = function(e) {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'THREAT') {
+        showPopup('threat', '⚠ Threat Detected!', [
+          `User: <b>${msg.username||'?'}</b>`,
+          `File: ${msg.filename||'?'}`,
+          `Risk: ${msg.risk||'?'} · Score: ${msg.score?(msg.score*100).toFixed(1)+'%':'?'}`,
+          `Time: ${msg.time||'?'}`,
+        ]);
+      } else if (msg.type === 'CLEAN') {
+        showPopup('clean', 'File Verified Clean', [
+          `User: <b>${msg.username||'?'}</b>`,
+          `Token: <b>${msg.token||'?'}</b> · ${msg.filename||'?'}`,
+          `Time: ${msg.time||'?'}`,
+        ]);
+      }
+    } catch(err) {}
+  };
+
+  ws.onclose = function() {
+    el('status-text').textContent = 'Reconnecting…';
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = function() {
+    el('status-text').textContent = 'Offline';
+  };
+}
+
+connectWS();
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+ENV/
+
+# Python tooling and build artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+
+# Local settings, secrets, and certificates (HTTP server does not use cert.pem)
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime logs and local copies of Pi storage
+*.log
+logs/
+/av_scan/
+/av_stage/
+/usb_share/
+/uploads/
+/piusb.bin
+
+# Keep pdf_student.pkl and pdf_scaler.pkl: both are required at startup.
+
+# Editor and operating-system files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local agent configuration
+.agents/
+.codex/

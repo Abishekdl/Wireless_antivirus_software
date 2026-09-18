@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — Files</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0d0d14;
+  --paper: #f5f3ef;
+  --cream: #ede9e1;
+  --warm: #c8c2b4;
+  --accent: #c8502a;
+  --green: #1e6b4a;
+  --green-pale: rgba(30,107,74,0.08);
+  --red: #c8202a;
+}
+html { font-size: 16px; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ── TOP BAR */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 52px;
+  background: rgba(245,243,239,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  z-index: 100;
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--warm);
+}
+.topbar-logo { font-size: 15px; font-weight: 800; color: var(--ink); text-transform: none; letter-spacing: 0; }
+.topbar-logo span { color: var(--accent); font-style: italic; }
+.topbar-back {
+  text-decoration: none; color: var(--ink);
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 8px;
+  background: var(--cream); border: 1px solid rgba(0,0,0,0.08);
+  transition: background 0.2s;
+}
+.topbar-back:hover { background: #e0dbd3; }
+
+/* ── MAIN */
+.main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 80px 20px 60px;
+}
+
+.page-title {
+  font-size: 28px; font-weight: 800;
+  margin-bottom: 4px;
+}
+.page-sub {
+  font-size: 14px; color: #888;
+  margin-bottom: 28px;
+}
+
+/* ── STATS ROW */
+.stats {
+  display: flex; gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 12px;
+  padding: 14px 20px;
+  min-width: 120px;
+  flex: 1;
+}
+.stat-num { font-size: 26px; font-weight: 800; }
+.stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.stat-num.green { color: var(--green); }
+.stat-num.red { color: var(--red); }
+
+/* ── SEARCH + CONTROLS */
+.controls {
+  display: flex; gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.search-box {
+  flex: 1; min-width: 180px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  outline: none;
+}
+.search-box:focus { border-color: var(--accent); }
+.ctrl-btn {
+  padding: 10px 16px;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ctrl-btn:hover { background: var(--cream); }
+.ctrl-btn.active { background: var(--ink); color: white; border-color: var(--ink); }
+.ctrl-btn.danger { border-color: var(--red); color: var(--red); }
+.ctrl-btn.danger:hover { background: #fff0f0; }
+
+/* ── FILE TABLE */
+.file-table {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.table-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 90px 80px 80px;
+  padding: 10px 16px;
+  background: var(--cream);
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #888;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.file-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 90px 80px 80px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  align-items: center;
+  transition: background 0.15s;
+}
+.file-row:last-child { border-bottom: none; }
+.file-row:hover { background: #faf9f7; }
+.file-icon { font-size: 20px; }
+.file-name {
+  font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-right: 12px;
+}
+.file-name .token {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  background: var(--cream);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  color: #666;
+}
+.file-user { font-size: 13px; color: #666; }
+.file-size { font-size: 12px; color: #999; font-family: 'DM Mono', monospace; }
+.file-dl {
+  display: flex; justify-content: flex-end;
+}
+.dl-btn {
+  text-decoration: none;
+  background: var(--ink);
+  color: white;
+  font-size: 12px; font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 7px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.dl-btn:hover { background: #2a2a3e; }
+
+/* ── EMPTY STATE */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 15px; }
+
+/* ── LOADING */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* ── REFRESH BADGE */
+.refresh-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #aaa;
+  margin-left: auto;
+}
+.refresh-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── MOBILE */
+@media (max-width: 600px) {
+  .table-header,
+  .file-row {
+    grid-template-columns: 36px 1fr 70px;
+  }
+  .table-header .col-size,
+  .file-row .file-size,
+  .table-header .col-user,
+  .file-row .file-user { display: none; }
+  .page-title { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">Secure<span>Vault</span></div>
+  <span>Collected Files</span>
+  <a href="/" class="topbar-back">← Scanner</a>
+</div>
+
+<div class="main">
+  <div class="page-title">📂 Collected Files</div>
+  <div class="page-sub" id="page-sub">Loading files from USB storage...</div>
+
+  <div class="stats" id="stats-row">
+    <div class="stat-card"><div class="stat-num green" id="stat-total">—</div><div class="stat-label">Total Files</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-size">—</div><div class="stat-label">Total Size</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-latest">—</div><div class="stat-label">Latest Token</div></div>
+  </div>
+
+  <div class="controls">
+    <input class="search-box" id="search" placeholder="🔍  Search by name or token..." oninput="renderTable()"/>
+    <button class="ctrl-btn" id="sort-btn" onclick="toggleSort()">Sort: Newest ↓</button>
+    <button class="ctrl-btn" onclick="loadFiles()">↻ Refresh</button>
+  </div>
+
+  <div class="file-table" id="file-table">
+    <div class="loading">Loading...</div>
+  </div>
+</div>
+
+<script>
+let allFiles = [];
+let sortAsc  = false;
+
+async function loadFiles() {
+  try {
+    const res  = await fetch('/files/list');
+    const data = await res.json();
+    allFiles   = data.files || [];
+    updateStats();
+    renderTable();
+  } catch(e) {
+    document.getElementById('file-table').innerHTML =
+      '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Could not load files. Is the server running?</div></div>';
+  }
+}
+
+function updateStats() {
+  const total    = allFiles.length;
+  const totalSize = allFiles.reduce((s, f) => s + (f.size || 0), 0);
+  const latest   = allFiles.length
+    ? allFiles.reduce((a, b) => (a.token > b.token ? a : b)).token
+    : '—';
+
+  document.getElementById('stat-total').textContent  = total;
+  document.getElementById('stat-size').textContent   = fmtSize(totalSize);
+  document.getElementById('stat-latest').textContent = latest || '—';
+  document.getElementById('page-sub').textContent    =
+    `${total} file${total !== 1 ? 's' : ''} stored on USB · auto-refreshes every 10s`;
+}
+
+function renderTable() {
+  const q   = document.getElementById('search').value.toLowerCase().trim();
+  let files = allFiles.filter(f =>
+    !q || f.name.toLowerCase().includes(q) || (f.token && f.token.includes(q))
+  );
+
+  files = files.slice().sort((a, b) =>
+    sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+  );
+
+  const tbl = document.getElementById('file-table');
+
+  if (files.length === 0) {
+    tbl.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">${q ? 'No files match your search.' : 'No files collected yet.'}</div>
+      </div>`;
+    return;
+  }
+
+  const rows = files.map(f => {
+    const token   = f.token ? `<span class="token">${f.token}</span>` : '';
+    const user    = f.user  || '—';
+    const size    = fmtSize(f.size || 0);
+    const icon    = f.name.endsWith('.pdf') ? '📄' : '📝';
+    return `
+      <div class="file-row">
+        <div class="file-icon">${icon}</div>
+        <div class="file-name">${token}${esc(f.name)}</div>
+        <div class="file-user">${esc(user)}</div>
+        <div class="file-size">${size}</div>
+        <div class="file-dl">
+          <a class="dl-btn" href="/download/${encodeURIComponent(f.name)}" download="${esc(f.name)}">⬇ Save</a>
+        </div>
+      </div>`;
+  }).join('');
+
+  tbl.innerHTML = `
+    <div class="table-header">
+      <span></span>
+      <span>Filename</span>
+      <span class="col-user">User</span>
+      <span class="col-size">Size</span>
+      <span></span>
+    </div>
+    ${rows}`;
+}
+
+function toggleSort() {
+  sortAsc = !sortAsc;
+  document.getElementById('sort-btn').textContent = sortAsc ? 'Sort: A→Z ↑' : 'Sort: Newest ↓';
+  renderTable();
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1024*1024)  return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auto-refresh every 10 seconds
+loadFiles();
+setInterval(loadFiles, 10000);
+</script>
+</body>
+</html>
