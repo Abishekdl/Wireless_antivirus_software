@@ -119,7 +119,3 @@ It reports server/model status, connected WebSocket clients, and the next token.
 - Captive-portal probe handlers mostly return success responses. Automatic browser opening is not guaranteed; open the Pi address manually.
 - Tokens, admin sessions, and the log buffer reset on restart. Reused names may overwrite earlier files, and simultaneous uploads with the same original filename share a temporary path.
 - Google Fonts are requested by the HTML pages; offline clients use fallback fonts.
-
-## Git exclusions
-
-The accompanying `.gitignore` excludes Python environments and caches, logs, local secrets/certificates, editor files, and local runtime storage. The two required `.pkl` model files remain eligible for version control. Ignore rules do not remove files that are already tracked.
